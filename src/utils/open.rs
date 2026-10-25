@@ -1,4 +1,5 @@
 use rustyline::DefaultEditor;
+use rustyline::error::ReadlineError;
 use std::{path::PathBuf, process::Command};
 
 use crate::utils::cli_args;
@@ -8,6 +9,9 @@ use super::builtin;
 use super::prompt::Prompt;
 
 pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
+    // handle ctrl+c while command is running
+    let _ = ctrlc::set_handler(|| {});
+
     let mut rl = DefaultEditor::new()?;
     let prompt = Prompt::new();
     let mut oldpwd: Option<PathBuf> = None;
@@ -16,9 +20,26 @@ pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
     );
     loop {
         let current_working_dir: PathBuf = std::env::current_dir().unwrap_or_default();
-        let Ok(line) = rl.readline(&prompt.render(&current_working_dir)) else {
-            break;
+        let line = match rl.readline(&prompt.render(&current_working_dir)) {
+            Ok(line) => line,
+            Err(ReadlineError::Interrupted) => {
+                // Ctrl+C: do not exit interactive waypoint shell
+                println!("^C");
+                continue;
+            }
+            Err(ReadlineError::Eof) => {
+                // Ctrl+D: exit
+                break;
+            }
+            Err(err) => {
+                tracing::error!("Readline error: {}", err);
+                break;
+            }
         };
+
+        // let Ok(line) = rl.readline(&prompt.render(&current_working_dir)) else {
+        //     break;
+        // };
         let line = line.trim();
         tracing::debug!(line = line, "Read input line");
         if let Some(reason) = allow(line) {
