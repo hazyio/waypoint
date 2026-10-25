@@ -120,3 +120,107 @@ impl Config {
         self.by_command.get(command)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{
+        fs,
+        path::PathBuf,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    fn temp_test_dir(label: &str) -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock drift")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("waypoint-{label}-{nanos}"));
+        fs::create_dir_all(&dir).expect("failed to create temp test dir");
+        dir
+    }
+
+    #[test]
+    fn loads_and_groups_settings_by_command() {
+        let root = temp_test_dir("config-load-group");
+        let tools_dir = root.join("tools");
+        let crates_dir = root.join("crates");
+        fs::create_dir_all(&tools_dir).expect("failed to create tools dir");
+        fs::create_dir_all(&crates_dir).expect("failed to create crates dir");
+
+        let config_path = root.join("waypoint.yaml");
+        let config_content = r#"
+bun:
+  cmd: bun
+  dir: tools
+bun-add:
+  cmd: bun
+  dir: tools
+  args:
+    - add
+cargo:
+  cmd: cargo
+  dir: crates
+"#;
+        fs::write(&config_path, config_content).expect("failed to write config");
+
+        let config = Config::load_from_file(&config_path).expect("config should load");
+
+        assert_eq!(config.settings.len(), 3);
+
+        let bun_group = config.by_command("bun").expect("bun group should exist");
+        assert_eq!(bun_group.len(), 2);
+        assert!(bun_group.iter().any(|s| s.name == "bun"));
+        assert!(bun_group.iter().any(|s| s.name == "bun-add"));
+        assert!(bun_group.iter().all(|s| s.dir == tools_dir));
+
+        let cargo_group = config
+            .by_command("cargo")
+            .expect("cargo group should exist");
+        assert_eq!(cargo_group.len(), 1);
+        assert_eq!(cargo_group[0].dir, crates_dir);
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn fails_when_directory_is_missing() {
+        let root = temp_test_dir("config-missing-dir");
+        let config_path = root.join("waypoint.yaml");
+        let config_content = r#"
+bun:
+  cmd: bun
+  dir: does-not-exist
+"#;
+        fs::write(&config_path, config_content).expect("failed to write config");
+
+        let err = Config::load_from_file(&config_path).expect_err("expected missing-dir error");
+        let message = err.to_string();
+        assert!(message.contains("missing directory"));
+        assert!(message.contains("bun"));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn fails_when_dir_is_not_a_directory() {
+        let root = temp_test_dir("config-not-directory");
+        let file_path = root.join("not-a-dir");
+        fs::write(&file_path, "content").expect("failed to create file");
+
+        let config_path = root.join("waypoint.yaml");
+        let config_content = r#"
+bun:
+  cmd: bun
+  dir: not-a-dir
+"#;
+        fs::write(&config_path, config_content).expect("failed to write config");
+
+        let err = Config::load_from_file(&config_path).expect_err("expected not-a-directory error");
+        let message = err.to_string();
+        assert!(message.contains("is not a directory"));
+        assert!(message.contains("bun"));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+}

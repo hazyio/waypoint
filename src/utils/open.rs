@@ -131,3 +131,30 @@ fn line_matches_setting_args(line_args: &str, required_args: &[String]) -> bool 
         .iter()
         .all(|required| line_parts.iter().any(|part| part == required))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::line_matches_setting_args;
+
+    #[test]
+    fn empty_required_args_match_only_empty_input() {
+        let required: Vec<String> = vec![];
+        assert!(line_matches_setting_args("", &required));
+        assert!(!line_matches_setting_args("add", &required));
+    }
+
+    #[test]
+    fn requires_all_config_args_to_be_present() {
+        let required = vec!["add".to_string(), "--dev".to_string()];
+        assert!(line_matches_setting_args("add --dev", &required));
+        assert!(line_matches_setting_args("--dev add", &required));
+        assert!(!line_matches_setting_args("add", &required));
+        assert!(!line_matches_setting_args("--dev", &required));
+    }
+
+    #[test]
+    fn allows_extra_user_args_when_all_required_are_present() {
+        let required = vec!["add".to_string()];
+        assert!(line_matches_setting_args("add lodash", &required));
+    }
+}
