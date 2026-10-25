@@ -9,3 +9,8 @@ bun-add:
 ls-one:
   cmd: ls
   dir: /home/daniel
+run-wails-dev:
+  cmd: wails
+  dir: /home/daniel/Projects/servergram/client
+  arg:
+    - dev
