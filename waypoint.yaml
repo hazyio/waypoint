@@ -1,0 +1,11 @@
+bun:
+  cmd: bun
+  dir: .
+bun-add:
+  cmd: bun
+  dir: .
+  args:
+    - add
+ls-one:
+  cmd: ls
+  dir: /home/daniel
