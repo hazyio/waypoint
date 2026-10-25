@@ -26,13 +26,13 @@ It also provides built-in `cd` behavior and a couple of helper commands.
 ## 1) Install script (Unix/macOS)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hazyio/waypoint/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/hazyio/waypoint/master/install.sh | sh
 ```
 
 Update existing install:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hazyio/waypoint/main/install.sh | sh -s -- update
+curl -fsSL https://raw.githubusercontent.com/hazyio/waypoint/master/install.sh | sh -s -- update
 ```
 
 Optional environment variables:
@@ -43,14 +43,14 @@ Optional environment variables:
 ## 2) Install script (Windows PowerShell)
 
 ```powershell
-iwr https://raw.githubusercontent.com/hazyio/waypoint/main/install.ps1 -OutFile install.ps1
+iwr https://raw.githubusercontent.com/hazyio/waypoint/master/install.ps1 -OutFile install.ps1
 ./install.ps1
 ```
 
 Update existing install:
 
 ```powershell
-iwr https://raw.githubusercontent.com/hazyio/waypoint/main/install.ps1 -OutFile install.ps1
+iwr https://raw.githubusercontent.com/hazyio/waypoint/master/install.ps1 -OutFile install.ps1
 ./install.ps1 update
 ```
 
