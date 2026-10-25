@@ -119,6 +119,11 @@ impl Config {
     pub fn by_command(&self, command: &str) -> Option<&Vec<ConfigSetting>> {
         self.by_command.get(command)
     }
+    pub fn history_path() -> Option<PathBuf> {
+        let dir = dirs::data_dir()?.join("waypoint");
+        std::fs::create_dir_all(&dir).ok()?;
+        Some(dir.join("history.txt"))
+    }
 }
 
 #[cfg(test)]

@@ -1,9 +1,9 @@
-use rustyline::DefaultEditor;
 use rustyline::error::ReadlineError;
+use rustyline::{Config, DefaultEditor};
 use std::{path::PathBuf, process::Command};
 
 use crate::utils::cli_args;
-use crate::utils::config::Config;
+use crate::utils::config::Config as AppConfig;
 
 use super::builtin;
 use super::prompt::Prompt;
@@ -11,8 +11,15 @@ use super::prompt::Prompt;
 pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
     // handle ctrl+c while command is running
     let _ = ctrlc::set_handler(|| {});
-
-    let mut rl = DefaultEditor::new()?;
+    let config = Config::builder()
+        .history_ignore_dups(true)?
+        .max_history_size(5000)?
+        .build();
+    let mut rl = DefaultEditor::with_config(config)?;
+    let hist = AppConfig::history_path();
+    if let Some(p) = &hist {
+        let _ = rl.load_history(p); // errors if the file doesn't exist yet; ignore
+    }
     let prompt = Prompt::new();
     let mut oldpwd: Option<PathBuf> = None;
     tracing::info!(
@@ -89,7 +96,7 @@ pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
         command.arg("/C");
         #[cfg(not(windows))]
         command.arg("-c");
-        match Config::load_from_file(&cli_args.config_path()) {
+        match AppConfig::load_from_file(&cli_args.config_path()) {
             Ok(value) => {
                 if let Some(settings) = value.by_command(cmd) {
                     tracing::debug!(
@@ -127,6 +134,10 @@ pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
         };
 
         tracing::debug!(line = line, "Executing shell command");
+        if let Some(p) = &hist {
+            // save history after each command to avoid losing it on crash
+            let _ = rl.save_history(p);
+        }
         let _ = command.arg(line).env("WAYPOINT_SHELL", "1").status();
     }
     Ok(())
