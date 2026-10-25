@@ -130,8 +130,6 @@ fn line_matches_setting_args(line_args: &str, required_args: &[String]) -> bool 
 mod tests {
     use super::line_matches_setting_args;
 
-
-
     #[test]
     fn requires_all_config_args_to_be_present() {
         let required = vec!["add".to_string(), "--dev".to_string()];
