@@ -1,6 +1,6 @@
 [package]
 name = "waypoint"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 description = "Interactive shell wrapper that routes commands by config"
 readme = "README.md"
@@ -19,7 +19,7 @@ dirs = "7.0.0"
 tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 noyalib = { version = "0.0.57" }
-
+ctrlc = "3.5.2"
 
 
 [profile.dev]
