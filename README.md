@@ -23,13 +23,7 @@ It also provides built-in `cd` behavior and a couple of helper commands.
 
 ## Installation
 
-## 1) Cargo
-
-```bash
-cargo install waypoint
-```
-
-## 2) Install script (Unix/macOS)
+## 1) Install script (Unix/macOS)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hazyio/waypoint/main/install.sh | sh
@@ -46,7 +40,7 @@ Optional environment variables:
 - `INSTALL_DIR` (default: `~/.local/bin`)
 - `WAYPOINT_REPOSITORY` (default: `hazyio/waypoint`)
 
-## 3) Install script (Windows PowerShell)
+## 2) Install script (Windows PowerShell)
 
 ```powershell
 iwr https://raw.githubusercontent.com/hazyio/waypoint/main/install.ps1 -OutFile install.ps1
@@ -65,7 +59,7 @@ Optional environment variables:
 - `INSTALL_DIR`
 - `WAYPOINT_REPOSITORY` (default: `hazyio/waypoint`)
 
-## 4) Download from GitHub Releases
+## 3) Download from GitHub Releases
 
 Download a prebuilt archive from:
 
