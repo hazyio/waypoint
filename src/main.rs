@@ -25,7 +25,11 @@ pub fn init_logging() {
 
     // Debug builds log at debug for your crate; release builds stay at info.
     // RUST_LOG still overrides both.
-    let default = if cfg!(debug_assertions) { "info,waypoint=debug" } else { "info" };
+    let default = if cfg!(debug_assertions) {
+        "info,waypoint=debug"
+    } else {
+        "info"
+    };
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(default));
 
     tracing_subscriber::fmt()
