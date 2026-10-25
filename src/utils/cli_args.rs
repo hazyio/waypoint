@@ -15,21 +15,27 @@ impl CliArgs {
     pub fn config_path(&self) -> PathBuf {
         match &self.config {
             Some(path) => {
+                tracing::debug!(path = %path.display(), "Using explicit config path");
                 if !path.exists() {
                     tracing::error!("Config file not found at: {}", path.display());
                     exit(1);
                 }
                 path.clone()
             }
-            None => default_config_path(),
+            None => {
+                let path = default_config_path();
+                tracing::debug!(path = %path.display(), "Using default config path");
+                path
+            }
         }
     }
     pub fn update_config_path(&mut self, new_path: PathBuf) {
+        tracing::debug!(path = %new_path.display(), "Updating config path");
         self.config = Some(new_path);
     }
 }
 fn default_config_path() -> PathBuf {
     let path = env::current_dir().expect("Failed to read working directory.");
 
-    path.join("midway.yaml")
+    path.join("waypoint.yaml")
 }

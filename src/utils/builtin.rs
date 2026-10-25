@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 pub fn cd(arg: &str, oldpwd: &mut Option<PathBuf>) {
+    tracing::debug!(arg = arg, "Running builtin cd");
     let home = std::env::var_os("HOME")
         .or_else(|| std::env::var_os("USERPROFILE"))
         .map(PathBuf::from);
@@ -25,7 +26,13 @@ pub fn cd(arg: &str, oldpwd: &mut Option<PathBuf>) {
 
     let prev = std::env::current_dir().ok();
     match std::env::set_current_dir(&target) {
-        Ok(()) => *oldpwd = prev, // only update on success
-        Err(e) => eprintln!("cd: {}: {}", target.display(), e),
+        Ok(()) => {
+            tracing::debug!(target = %target.display(), "Changed directory");
+            *oldpwd = prev
+        } // only update on success
+        Err(e) => {
+            tracing::debug!(target = %target.display(), error = %e, "Failed to change directory");
+            eprintln!("cd: {}: {}", target.display(), e)
+        }
     }
 }

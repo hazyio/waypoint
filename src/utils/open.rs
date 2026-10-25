@@ -20,6 +20,7 @@ pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
             break;
         };
         let line = line.trim();
+        tracing::debug!(line = line, "Read input line");
         if let Some(reason) = allow(line) {
             eprintln!("waypoint: blocked ({reason})");
             continue;
@@ -33,6 +34,7 @@ pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
             .split_once(char::is_whitespace)
             .map(|(c, a)| (c, a.trim()))
             .unwrap_or((line, ""));
+        tracing::debug!(cmd = cmd, arg = arg, "Parsed command line");
 
         match cmd {
             "exit" => break,
@@ -43,6 +45,7 @@ pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
                     continue;
                 }
                 cli_args.update_config_path(new_path.clone());
+                tracing::debug!(path = %new_path.display(), "Config path updated from shell command");
                 println!("Config path updated to: {}", new_path.display());
                 continue;
             }
@@ -66,15 +69,33 @@ pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
         command.arg("/C");
         #[cfg(not(windows))]
         command.arg("-c");
-        let read_config = Config::load_from_file(&cli_args.config_path());
-        match read_config {
+        match Config::load_from_file(&cli_args.config_path()) {
             Ok(value) => {
-                if let Some(data) = value.by_command(cmd) {
-                    for data in data {
-                        if data.args.
+                if let Some(settings) = value.by_command(cmd) {
+                    tracing::debug!(
+                        cmd = cmd,
+                        candidates = settings.len(),
+                        "Found command config candidates"
+                    );
+                    if let Some(setting) = settings
+                        .iter()
+                        .find(|setting| line_matches_setting_args(arg, &setting.args))
+                    {
+                        tracing::debug!(
+                            setting = %setting.name,
+                            dir = %setting.dir.display(),
+                            "Matched config setting"
+                        );
+                        command.current_dir(&setting.dir);
+                    } else {
+                        tracing::debug!(
+                            cmd = cmd,
+                            arg = arg,
+                            "No config setting matched command args"
+                        );
                     }
-                    // command = command.current_dir(dir)
-                    // If the command is found in the config, set the current directory to the one specified in the config
+                } else {
+                    tracing::debug!(cmd = cmd, "No config group for command");
                 }
             }
             Err(e) => {
@@ -83,8 +104,9 @@ pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
                     continue;
                 }
             }
-        }
+        };
 
+        tracing::debug!(line = line, "Executing shell command");
         let _ = command.arg(line).env("WAYPOINT_SHELL", "1").status();
     }
     Ok(())
@@ -95,4 +117,17 @@ fn allow(cmd: &str) -> Option<&str> {
         return Some("rm -rf / is blocked");
     }
     None
+}
+
+fn line_matches_setting_args(line_args: &str, required_args: &[String]) -> bool {
+    let line_parts: Vec<&str> = line_args.split_whitespace().collect();
+
+    // all-or-none: empty config args only match empty input args.
+    if required_args.is_empty() {
+        return line_parts.is_empty();
+    }
+
+    required_args
+        .iter()
+        .all(|required| line_parts.iter().any(|part| part == required))
 }
