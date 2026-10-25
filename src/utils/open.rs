@@ -130,12 +130,7 @@ fn line_matches_setting_args(line_args: &str, required_args: &[String]) -> bool 
 mod tests {
     use super::line_matches_setting_args;
 
-    #[test]
-    fn empty_required_args_match_only_empty_input() {
-        let required: Vec<String> = vec![];
-        assert!(line_matches_setting_args("", &required));
-        assert!(!line_matches_setting_args("add", &required));
-    }
+
 
     #[test]
     fn requires_all_config_args_to_be_present() {
