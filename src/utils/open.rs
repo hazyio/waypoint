@@ -15,8 +15,8 @@ pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
         "Interactive shell opened, use ctrl+d to exit; use waypoint to confirm if you are in the waypoint environment"
     );
     loop {
-        let cwd: PathBuf = std::env::current_dir().unwrap_or_default();
-        let Ok(line) = rl.readline(&prompt.render(&cwd)) else {
+        let current_working_dir: PathBuf = std::env::current_dir().unwrap_or_default();
+        let Ok(line) = rl.readline(&prompt.render(&current_working_dir)) else {
             break;
         };
         let line = line.trim();
@@ -30,16 +30,15 @@ pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
         }
         rl.add_history_entry(line)?;
 
-        let (cmd, arg) = line
+        let (cmd, command_args) = line
             .split_once(char::is_whitespace)
             .map(|(c, a)| (c, a.trim()))
             .unwrap_or((line, ""));
-        tracing::debug!(cmd = cmd, arg = arg, "Parsed command line");
-
+        tracing::debug!(cmd = cmd, arg = command_args, "Parsed command line");
         match cmd {
             "exit" => break,
             "waypoint-update-config" => {
-                let new_path = cwd.join("waypoint.yaml");
+                let new_path = current_working_dir.join("waypoint.yaml");
                 if !new_path.exists() {
                     tracing::error!("Config file not found at: {}", new_path.display());
                     continue;
@@ -54,7 +53,7 @@ pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
                 continue;
             }
             "cd" => {
-                builtin::cd(arg, &mut oldpwd);
+                builtin::cd(command_args, &mut oldpwd);
                 continue;
             }
             _ => {}
@@ -79,7 +78,7 @@ pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
                     );
                     if let Some(setting) = settings
                         .iter()
-                        .find(|setting| line_matches_setting_args(arg, &setting.args))
+                        .find(|setting| line_matches_setting_args(command_args, &setting.args))
                     {
                         tracing::debug!(
                             setting = %setting.name,
@@ -90,7 +89,7 @@ pub fn open(cli_args: &mut cli_args::CliArgs) -> rustyline::Result<()> {
                     } else {
                         tracing::debug!(
                             cmd = cmd,
-                            arg = arg,
+                            arg = command_args,
                             "No config setting matched command args"
                         );
                     }
@@ -121,11 +120,6 @@ fn allow(cmd: &str) -> Option<&str> {
 
 fn line_matches_setting_args(line_args: &str, required_args: &[String]) -> bool {
     let line_parts: Vec<&str> = line_args.split_whitespace().collect();
-
-    // all-or-none: empty config args only match empty input args.
-    if required_args.is_empty() {
-        return line_parts.is_empty();
-    }
 
     required_args
         .iter()
